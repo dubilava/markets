@@ -48,13 +48,18 @@ jobs:
             libharfbuzz-dev \
             libfribidi-dev
 
-      - name: Setup renv cache
-        uses: r-lib/actions/setup-renv@v2
-
-      - name: Restore renv library
+      - name: Install R packages
         run: |
-          Rscript -e 'if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv", repos = "https://cloud.r-project.org")'
-          Rscript -e 'renv::restore(prompt = FALSE)'
+          Rscript -e 'install.packages(c(
+            "data.table",
+            "readxl",
+            "stringr",
+            "rvest",
+            "httr2",
+            "xml2",
+            "ggplot2",
+            "viridis"
+          ), repos = "https://cloud.r-project.org")'
 
       - name: Fetch latest workbook
         run: Rscript scripts/fetch_data.R
