@@ -7,6 +7,9 @@ on:
   schedule:
     - cron: '15 6 * * *'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: read
   pages: write
@@ -35,13 +38,23 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev
+          sudo apt-get install --yes \
+            pkg-config \
+            zlib1g-dev \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libfontconfig1-dev \
+            libharfbuzz-dev \
+            libfribidi-dev
 
       - name: Setup renv cache
         uses: r-lib/actions/setup-renv@v2
 
       - name: Restore renv library
-        run: Rscript -e 'if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv", repos = "https://cloud.r-project.org"); renv::restore(prompt = FALSE)'
+        run: |
+          Rscript -e 'if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv", repos = "https://cloud.r-project.org")'
+          Rscript -e 'renv::restore(prompt = FALSE)'
 
       - name: Fetch latest workbook
         run: Rscript scripts/fetch_data.R
