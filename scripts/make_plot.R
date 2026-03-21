@@ -10,7 +10,7 @@ output_dir <- "docs/assets/plots"
 output_file <- file.path(output_dir, "pink_sheet_indices.png")
 required_series <- c("Energy", "Cereals", "Oils and Meals", "Fertilizers")
 
-fail_gracefully <- function(message_text, status = 1L) {
+fail_gracefully <- function(message_text, status = 0L) {
   message(sprintf("Plot generation skipped: %s", message_text))
   quit(save = "no", status = status)
 }
@@ -54,25 +54,33 @@ dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 plot_object <- ggplot(plot_dt, aes(x = Date, y = Value, color = Series)) +
   geom_line(linewidth = 1) +
+  scale_color_viridis_d(option = "D", end = 0.9) +
   labs(
     title = "World Bank Pink Sheet Market Indices",
-    subtitle = "Selected monthly commodity index series from the processed Pink Sheet dataset",
+    subtitle = "Monthly index levels for selected commodity groups",
     x = "Date",
-    y = "Value",
+    y = "Index value",
     color = "Series",
     caption = "Source: World Bank Pink Sheet"
   ) +
-  theme_minimal(base_size = 13) +
+  theme_minimal(base_size = 12) +
   theme(
     plot.title.position = "plot",
-    legend.position = "bottom"
-  )
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold"),
+    legend.key.width = grid::unit(1.2, "lines"),
+    panel.grid.minor = element_blank(),
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10)),
+    plot.caption = element_text(hjust = 0)
+  ) +
+  guides(color = guide_legend(nrow = 1, byrow = TRUE))
 
 ggsave(
   filename = output_file,
   plot = plot_object,
-  width = 16,
-  height = 9,
+  width = 10,
+  height = 6,
   dpi = 300,
   bg = "white"
 )
