@@ -6,8 +6,8 @@ execute:
   enabled: true
 ---
 
-This site tracks the World Bank 'Pink Sheet' monthly indices of a small set of commodity groups that are refreshed by the repository's automated R pipeline and published as a Quarto website.
+This site tracks price indices for selected commodity groups from the World Bank’s Pink Sheet, updated monthly. The indices are expressed in nominal US dollars and normalized to 2010 = 100.
 
-_Last updated: `r format(Sys.Date(), "%B %d, %Y")_
+_Last updated: `r format(Sys.Date(), "%B %d, %Y")`_
 
 ![](assets/plots/pink_sheet_indices.png){fig-alt="Time-series plot of the Energy, Grains, Oils and Meals, and Fertilizers indices."}

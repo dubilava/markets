@@ -29,6 +29,7 @@ find_latest_raw_file <- function(path) {
 }
 
 latest_file <- find_latest_raw_file(raw_dir)
+
 sheet_name <- "Monthly Indices"
 
 raw_sheet <- as.data.table(
@@ -43,22 +44,39 @@ if (nrow(raw_sheet) < 10L) {
   stop(sprintf("Sheet '%s' does not contain expected data rows.", sheet_name), call. = FALSE)
 }
 
-# Data begin at row 10
-dt <- copy(raw_sheet[10:.N])
 
-# Keep only columns needed:
-# ...1  = Date
-# ...3  = Energy
-# ...8  = Oils & Meals
-# ...9  = Grains
-# ...14 = Fertilizers
-dt <- dt[, .(
-  Date = ...1,
-  Energy = ...3,
-  `Oils and Meals` = ...8,
-  Grains = ...9,
-  Fertilizers = ...14
-)]
+# find where actual data starts (e.g. "1960M01")
+data_start <- which(grepl("^\\d{4}M\\d{2}$", raw_sheet[[1]]))[1]
+
+# header rows = everything above that
+header_rows <- raw_sheet[1:(data_start - 1)]
+
+get_name <- function(x) {
+  val <- x[!is.na(x) & x != ""]
+  if (length(val) == 0) return(NA_character_)
+  
+  name <- val[1]
+  name <- gsub("\\*+", "", name)            # remove asterisks
+  name <- gsub("[^A-Za-z0-9]+", "_", name)  # replace non-alphanumeric with _
+  name <- gsub("_+", "_", name)             # collapse multiple _
+  name <- gsub("^_|_$", "", name)           # trim leading/trailing _
+  
+  name
+}
+
+# generate names
+new_names <- sapply(header_rows, get_name)
+
+new_names[1] <- "Date"
+
+# assign names
+setnames(raw_sheet, new_names)
+
+# drop header rows
+raw_sheet <- raw_sheet[data_start:.N]
+
+# clean up the data
+dt <- copy(raw_sheet)
 
 # Drop fully empty rows if any
 dt <- dt[!is.na(Date)]
@@ -67,7 +85,7 @@ dt <- dt[!is.na(Date)]
 dt[, Date := as.Date(paste0(substr(Date, 1, 4), "-", substr(Date, 6, 7), "-01"))]
 
 # Convert numeric columns
-value_cols <- c("Energy", "Oils and Meals", "Grains", "Fertilizers")
+value_cols <- setdiff(names(raw_sheet), "Date")
 dt[, (value_cols) := lapply(.SD, function(x) as.numeric(as.character(x))), .SDcols = value_cols]
 
 # Long format

@@ -8,7 +8,8 @@ suppressPackageStartupMessages({
 input_file <- "data/processed/pink_sheet_indices.csv"
 output_dir <- "docs/assets/plots"
 output_file <- file.path(output_dir, "pink_sheet_indices.png")
-required_series <- c("Energy", "Grains", "Oils and Meals", "Fertilizers")
+
+required_series <- c("Energy", "Grains", "Oils_Meals", "Fertilizers")
 
 fail_gracefully <- function(message_text, status = 0L) {
   message(sprintf("Plot generation skipped: %s", message_text))
@@ -54,16 +55,15 @@ dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 plot_object <- ggplot(plot_dt[Date>="2000-01-01"], aes(x = Date, y = Value, color = Series)) +
   geom_line(linewidth = 1) +
-  scale_color_viridis_d(option = "H", end = 0.9) +
+  scale_color_viridis_d(option = "H", begin = 0.1, end = 0.9) +
   labs(
-    title = "Selected Commodity Market Indices",
-    subtitle = "(based on nominal US dollars, 2010=100)",
-    x = "Year",
-    y = "Index value",
+    x = NULL,
+    y = NULL,
+    subtitle = "Index value",
     color = "Series",
-    caption = "Source: World Bank 'Pink Sheet'"
+    caption = "Source: World Bank 'Pink Sheet' available at\nhttps://www.worldbank.org/en/research/commodity-markets"
   ) +
-  theme_minimal(base_size = 18) +
+  theme_classic(base_size = 18) +
   theme(
     plot.title.position = "plot",
     legend.position = "bottom",
@@ -72,7 +72,7 @@ plot_object <- ggplot(plot_dt[Date>="2000-01-01"], aes(x = Date, y = Value, colo
     panel.grid.minor = element_blank(),
     axis.title.x = element_text(margin = margin(t = 10)),
     axis.title.y = element_text(margin = margin(r = 10)),
-    plot.caption = element_text(hjust = 0)
+    plot.caption = element_text(hjust = 0, color="dimgray")
   ) +
   guides(color = guide_legend(nrow = 1, byrow = TRUE))
 
