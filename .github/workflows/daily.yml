@@ -35,12 +35,21 @@ jobs:
       - name: Process workbook
         run: Rscript scripts/process_data.R
 
+      - name: Generate plot
+        run: Rscript scripts/make_plot.R
+
+      - name: Setup Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Render Quarto site
+        run: quarto render
+
       - name: Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [[ -n "$(git status --porcelain)" ]]; then
-            git add data/raw data/processed logs
+            git add data/raw data/processed docs logs _quarto.yml scripts/make_plot.R renv.lock
             git commit -m "chore: refresh pink sheet data"
             git push
           else

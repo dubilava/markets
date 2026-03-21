@@ -1,0 +1,12 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Pink Sheet Dashboard"
+
+format:
+  html:
+    theme: cosmo
+    toc: false
+    date-modified: true
