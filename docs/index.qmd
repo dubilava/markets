@@ -2,8 +2,8 @@
 title: "World Bank Pink Sheet Indices"
 ---
 
-This site tracks a small set of World Bank Pink Sheet market indices that are refreshed by the repository's automated R pipeline and published as a Quarto website.
+This site tracks the World Bank 'Pink Sheet' monthly indices of a small set of commodity groups that are refreshed by the repository's automated R pipeline and published as a Quarto website.
 
 _Last updated: `r format(Sys.Date(), "%B %d, %Y")_
 
-![](assets/plots/pink_sheet_indices.png){fig-alt="Time-series plot of the Energy, Cereals, Oils and Meals, and Fertilizers Pink Sheet indices."}
+![](assets/plots/pink_sheet_indices.png){fig-alt="Time-series plot of the Energy, Grains, Oils and Meals, and Fertilizers indices."}
