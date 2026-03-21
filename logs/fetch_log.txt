@@ -1,0 +1,11 @@
+[2026-03-21 21:56:40 AEDT] [INFO] Fetch source page https://www.worldbank.org/en/research/commodity-markets (attempt 1 of 3)
+[2026-03-21 21:56:40 AEDT] [WARN] Fetch source page https://www.worldbank.org/en/research/commodity-markets failed: could not find function "req"
+[2026-03-21 21:56:42 AEDT] [INFO] Fetch source page https://www.worldbank.org/en/research/commodity-markets (attempt 2 of 3)
+[2026-03-21 21:56:42 AEDT] [WARN] Fetch source page https://www.worldbank.org/en/research/commodity-markets failed: could not find function "req"
+[2026-03-21 21:56:48 AEDT] [INFO] Fetch source page https://www.worldbank.org/en/research/commodity-markets (attempt 3 of 3)
+[2026-03-21 21:56:48 AEDT] [WARN] Fetch source page https://www.worldbank.org/en/research/commodity-markets failed: could not find function "req"
+[2026-03-21 21:58:22 AEDT] [INFO] Fetch source page https://www.worldbank.org/en/research/commodity-markets (attempt 1 of 3)
+[2026-03-21 21:58:23 AEDT] [INFO] Resolved monthly prices URL: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+[2026-03-21 21:58:23 AEDT] [INFO] Inspect remote workbook metadata https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx (attempt 1 of 3)
+[2026-03-21 21:58:24 AEDT] [INFO] Download workbook https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx (attempt 1 of 3)
+[2026-03-21 21:58:24 AEDT] [INFO] Saved workbook to data/raw/CMO-Historical-Data-Monthly_2026-03-03.xlsx (780631 bytes)

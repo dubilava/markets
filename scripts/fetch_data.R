@@ -72,7 +72,7 @@ normalize_href <- function(href, base_url) {
 extract_monthly_prices_url <- function(page_url) {
   page <- retry(
     function() {
-      req(page_url) |>
+      request(page_url) |>
         req_user_agent("markets-pink-sheet-pipeline/1.0") |>
         req_timeout(60) |>
         req_perform() |>
@@ -110,7 +110,7 @@ coalesce <- function(x, y) ifelse(is.na(x), y, x)
 resolve_remote_date <- function(file_url) {
   response <- retry(
     function() {
-      req(file_url) |>
+      request(file_url) |>
         req_user_agent("markets-pink-sheet-pipeline/1.0") |>
         req_method("HEAD") |>
         req_timeout(60) |>
@@ -152,7 +152,7 @@ on.exit(unlink(temp_file), add = TRUE)
 
 raw_content <- retry(
   function() {
-    response <- req(monthly_url) |>
+    response <- request(monthly_url) |>
       req_user_agent("markets-pink-sheet-pipeline/1.0") |>
       req_timeout(120) |>
       req_retry(max_tries = 2) |>
