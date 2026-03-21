@@ -63,7 +63,7 @@ plot_object <- ggplot(plot_dt[Date>="2000-01-01"], aes(x = Date, y = Value, colo
     color = "Series",
     caption = "Source: World Bank 'Pink Sheet'"
   ) +
-  theme_minimal(base_size = 12) +
+  theme_minimal(base_size = 18) +
   theme(
     plot.title.position = "plot",
     legend.position = "bottom",
