@@ -1,5 +1,9 @@
 ---
 title: "World Bank Pink Sheet Indices"
+format: html
+
+execute:
+  enabled: true
 ---
 
 This site tracks the World Bank 'Pink Sheet' monthly indices of a small set of commodity groups that are refreshed by the repository's automated R pipeline and published as a Quarto website.
