@@ -1,12 +1,11 @@
 project:
   type: website
-  output-dir: docs
+  output-dir: _site
 
 website:
-  title: "Pink Sheet Dashboard"
+  title: "Pink Sheet Monitor"
 
 format:
   html:
     theme: cosmo
     toc: false
-    date-modified: true
