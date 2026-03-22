@@ -57,6 +57,7 @@ jobs:
             "rvest",
             "httr2",
             "xml2",
+            "knitr",
             "ggplot2",
             "viridis"
           ), repos = "https://cloud.r-project.org")'
