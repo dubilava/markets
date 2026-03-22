@@ -8,8 +8,9 @@ suppressPackageStartupMessages({
 
 raw_dir <- "data/raw"
 processed_dir <- "data/processed"
-output_long <- file.path(processed_dir, "pink_sheet_indices.csv")
-output_wide <- file.path(processed_dir, "pink_sheet_indices_wide.csv")
+
+output_long <- file.path(processed_dir, "pink_sheet_combined.csv")
+output_wide <- file.path(processed_dir, "pink_sheet_combined_wide.csv")
 
 dir.create(processed_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -28,84 +29,204 @@ find_latest_raw_file <- function(path) {
   files[order(file_dates, decreasing = TRUE)][1]
 }
 
-latest_file <- find_latest_raw_file(raw_dir)
-
-sheet_name <- "Monthly Indices"
-
-raw_sheet <- as.data.table(
-  read_excel(
-    latest_file,
-    sheet = sheet_name,
-    col_names = FALSE
-  )
-)
-
-if (nrow(raw_sheet) < 10L) {
-  stop(sprintf("Sheet '%s' does not contain expected data rows.", sheet_name), call. = FALSE)
-}
-
-
-# find where actual data starts (e.g. "1960M01")
-data_start <- which(grepl("^\\d{4}M\\d{2}$", raw_sheet[[1]]))[1]
-
-# header rows = everything above that
-header_rows <- raw_sheet[1:(data_start - 1)]
-
-get_name <- function(x) {
-  val <- x[!is.na(x) & x != ""]
-  if (length(val) == 0) return(NA_character_)
-  
-  name <- val[1]
-  name <- gsub("\\*+", "", name)            # remove asterisks
-  name <- gsub("[^A-Za-z0-9]+", "_", name)  # replace non-alphanumeric with _
-  name <- gsub("_+", "_", name)             # collapse multiple _
-  name <- gsub("^_|_$", "", name)           # trim leading/trailing _
-  
+clean_name <- function(name) {
+  name <- gsub("\\*+", "", name)
+  name <- gsub("[^A-Za-z0-9]+", "_", name)
+  name <- gsub("_+", "_", name)     # collapse here
+  name <- gsub("^_|_$", "", name)
   name
 }
 
-# generate names
-new_names <- sapply(header_rows, get_name)
+parse_ym <- function(x) {
+  as.Date(paste0(substr(x, 1, 4), "-", substr(x, 6, 7), "-01"))
+}
 
-new_names[1] <- "Date"
+parse_unit_currency <- function(x) {
+  x <- trimws(as.character(x))
+  x <- gsub("^\\(|\\)$", "", x)
+  
+  parts <- strsplit(x, "/", fixed = TRUE)[[1]]
+  parts <- trimws(parts)
+  
+  if (length(parts) == 2) {
+    num <- parts[1]
+    den <- parts[2]
+    
+    # map numerator → currency
+    currency <- if (num %in% c("$", "US$")) {
+      "dollar"
+    } else if (num == "c") {
+      "cent"
+    } else {
+      clean_name(num)
+    }
+    
+    unit <- clean_name(den)
+    
+    list(
+      Currency = currency,
+      Unit = unit
+    )
+    
+  } else {
+    list(
+      Currency = clean_name(x),
+      Unit = NA_character_
+    )
+  }
+}
 
-# assign names
-setnames(raw_sheet, new_names)
+process_monthly_indices <- function(latest_file) {
+  sheet_name <- "Monthly Indices"
+  
+  raw_sheet <- as.data.table(
+    read_excel(latest_file, sheet = sheet_name, col_names = FALSE)
+  )
+  
+  data_start <- which(grepl("^\\d{4}M\\d{2}$", raw_sheet[[1]]))[1]
+  if (is.na(data_start)) {
+    stop(sprintf("Could not detect start of data in sheet '%s'.", sheet_name), call. = FALSE)
+  }
+  
+  header_rows <- raw_sheet[1:(data_start - 1)]
+  
+  get_name_first <- function(x) {
+    val <- x[!is.na(x) & x != ""]
+    if (length(val) == 0) return(NA_character_)
+    clean_name(val[1])
+  }
+  
+  new_names <- sapply(header_rows, get_name_first)
+  new_names[1] <- "Date"
+  new_names <- make.unique(new_names, sep = "_")
+  
+  setnames(raw_sheet, new_names)
+  dt <- raw_sheet[data_start:.N]
+  dt <- dt[!is.na(Date)]
+  dt[, Date := parse_ym(as.character(Date))]
+  
+  value_cols <- setdiff(names(dt), "Date")
+  dt[, (value_cols) := lapply(.SD, function(x) as.numeric(as.character(x))), .SDcols = value_cols]
+  
+  long_dt <- melt(
+    dt,
+    id.vars = "Date",
+    variable.name = "Series",
+    value.name = "Value"
+  )
+  
+  long_dt <- long_dt[!is.na(Value)]
+  long_dt[, `:=`(
+    Unit = "Index",
+    Currency = "2010_100"
+  )]
+  
+  setcolorder(long_dt, c("Date", "Series", "Unit", "Currency", "Value"))
+  setorder(long_dt, Date, Series)
+  
+  long_dt[]
+}
 
-# drop header rows
-raw_sheet <- raw_sheet[data_start:.N]
+process_monthly_prices <- function(latest_file) {
+  sheet_name <- "Monthly Prices"
+  
+  raw_sheet <- as.data.table(
+    read_excel(latest_file, sheet = sheet_name, col_names = FALSE)
+  )
+  
+  data_start <- which(grepl("^\\d{4}M\\d{2}$", raw_sheet[[1]]))[1]
+  if (is.na(data_start)) {
+    stop(sprintf("Could not detect start of data in sheet '%s'.", sheet_name), call. = FALSE)
+  }
+  
+  header_rows <- raw_sheet[1:(data_start - 1)]
+  
+  # For Monthly Prices:
+  # - series names are the second-last non-missing entry in each column
+  # - unit/currency is the last non-missing entry in each column
+  get_series_name <- function(x) {
+    val <- x[!is.na(x) & x != ""]
+    if (length(val) == 0) return(NA_character_)
+    if (length(val) == 1) return(clean_name(val[1]))
+    clean_name(val[length(val) - 1])
+  }
+  
+  get_unit_currency_raw <- function(x) {
+    val <- x[!is.na(x) & x != ""]
+    if (length(val) < 2) return(NA_character_)
+    as.character(val[length(val)])
+  }
+  
+  series_names <- sapply(header_rows, get_series_name)
+  unit_currency_raw <- sapply(header_rows, get_unit_currency_raw)
+  
+  series_names[1] <- "Date"
+  series_names <- make.unique(series_names, sep = "_")
+  
+  setnames(raw_sheet, series_names)
+  dt <- raw_sheet[data_start:.N]
+  dt <- dt[!is.na(Date)]
+  dt[, Date := parse_ym(as.character(Date))]
+  
+  value_cols <- setdiff(names(dt), "Date")
+  dt[, (value_cols) := lapply(.SD, function(x) as.numeric(as.character(x))), .SDcols = value_cols]
+  
+  # Build metadata table from original headers
+  meta <- data.table(
+    Series = value_cols,
+    unit_currency_raw = unit_currency_raw[match(value_cols, series_names)]
+  )
+  
+  meta[, c("Currency", "Unit") := {
+    parsed <- lapply(unit_currency_raw, parse_unit_currency)
+    list(
+      vapply(parsed, `[[`, character(1), "Currency"),
+      vapply(parsed, `[[`, character(1), "Unit")
+    )
+  }]
+  
+  meta[, unit_currency_raw := NULL]
+  
+  long_dt <- melt(
+    dt,
+    id.vars = "Date",
+    variable.name = "Series",
+    value.name = "Value"
+  )
+  
+  long_dt <- long_dt[!is.na(Value)]
+  long_dt <- merge(long_dt, meta, by = "Series", all.x = TRUE, sort = FALSE)
+  
+  setcolorder(long_dt, c("Date", "Series", "Unit", "Currency", "Value"))
+  setorder(long_dt, Date, Series)
+  
+  long_dt[]
+}
 
-# clean up the data
-dt <- copy(raw_sheet)
+latest_file <- find_latest_raw_file(raw_dir)
 
-# Drop fully empty rows if any
-dt <- dt[!is.na(Date)]
+indices_dt <- process_monthly_indices(latest_file)
+prices_dt  <- process_monthly_prices(latest_file)
 
-# Parse dates like 1960M01
-dt[, Date := as.Date(paste0(substr(Date, 1, 4), "-", substr(Date, 6, 7), "-01"))]
-
-# Convert numeric columns
-value_cols <- setdiff(names(raw_sheet), "Date")
-dt[, (value_cols) := lapply(.SD, function(x) as.numeric(as.character(x))), .SDcols = value_cols]
-
-# Long format
-long_dt <- melt(
-  dt,
-  id.vars = "Date",
-  variable.name = "Series",
-  value.name = "Value"
+combined_long <- rbindlist(
+  list(indices_dt, prices_dt),
+  use.names = TRUE,
+  fill = TRUE
 )
 
-long_dt <- long_dt[!is.na(Date) & !is.na(Value)]
-setorder(long_dt, Date, Series)
+setorder(combined_long, Date, Series)
 
-# Wide format
-wide_dt <- dcast(long_dt, Date ~ Series, value.var = "Value")
-setnames(wide_dt, old = "Oils and Meals", new = "Oils_and_Meals", skip_absent = TRUE)
+combined_long[, Series_Wide := paste(Series, Unit, Currency, sep = "_")]
 
-fwrite(long_dt, output_long)
-fwrite(wide_dt, output_wide)
+combined_wide <- dcast(
+  combined_long,
+  Date ~ Series_Wide,
+  value.var = "Value"
+)
+
+fwrite(combined_long, output_long)
+fwrite(combined_wide, output_wide)
 
 message(sprintf("Processed workbook: %s", basename(latest_file)))
-message(sprintf("Saved long data to: %s", output_long))
-message(sprintf("Saved wide data to: %s", output_wide))
+message(sprintf("Saved combined long data to: %s", output_long))
+message(sprintf("Saved combined wide data to: %s", output_wide))

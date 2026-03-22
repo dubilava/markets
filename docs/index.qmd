@@ -1,13 +1,11 @@
 ---
-title: "World Bank Pink Sheet Indices"
+title: "Commodity Price Tracker"
 format: html
-
-execute:
-  enabled: true
+date: today
 ---
 
-This site tracks price indices for selected commodity groups from the World Bank’s Pink Sheet, updated monthly. The indices are expressed in nominal US dollars and normalized to 2010 = 100.
-
-_Last updated: `r format(Sys.Date(), "%B %d, %Y")`_
+This site tracks selected commodity prices and price indices from the World Bank’s ‘Pink Sheet,’ which is typically updated at the beginning of each month. Prices are expressed in nominal US dollars, and indices are normalized to 2010 = 100.
 
 ![](assets/plots/pink_sheet_indices.png){fig-alt="Time-series plot of the Energy, Grains, Oils and Meals, and Fertilizers indices."}
+
+![](assets/plots/pink_sheet_prices.png){fig-alt="Time-series plot of the Urea, Rice, Maize, and Wheat prices."}
