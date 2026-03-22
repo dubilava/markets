@@ -140,6 +140,7 @@ monthly_url <- extract_monthly_prices_url(source_url)
 log_message("INFO", sprintf("Resolved monthly prices URL: %s", monthly_url))
 
 file_date <- resolve_remote_date(monthly_url)
+
 out_file <- file.path(raw_dir, sprintf("CMO-Historical-Data-Monthly_%s.xlsx", file_date))
 
 if (file.exists(out_file)) {

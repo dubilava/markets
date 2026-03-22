@@ -205,8 +205,13 @@ process_monthly_prices <- function(latest_file) {
 
 latest_file <- find_latest_raw_file(raw_dir)
 
+file_date <- as.IDate(str_match(basename(latest_file), "_(\\d{4}-\\d{2}-\\d{2})\\.xlsx$")[, 2])
+
 indices_dt <- process_monthly_indices(latest_file)
 prices_dt  <- process_monthly_prices(latest_file)
+
+indices_dt[, Update := as.Date(file_date)]
+prices_dt[,  Update := as.Date(file_date)]
 
 combined_long <- rbindlist(
   list(indices_dt, prices_dt),
@@ -220,7 +225,7 @@ combined_long[, Series_Wide := paste(Series, Unit, Currency, sep = "_")]
 
 combined_wide <- dcast(
   combined_long,
-  Date ~ Series_Wide,
+  Date + Update ~ Series_Wide,
   value.var = "Value"
 )
 

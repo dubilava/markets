@@ -32,6 +32,8 @@ plot_dt <- tryCatch(
   }
 )
 
+file_update <- unique(plot_dt$Update)
+
 required_columns <- c("Date", "Series", "Value")
 missing_columns <- setdiff(required_columns, names(plot_dt))
 if (length(missing_columns)) {
@@ -66,7 +68,11 @@ plot_object <- ggplot(plot_dt[Date>="2000-01-01"], aes(x = Date, y = Value, colo
     y = NULL,
     subtitle = "Index",
     color = "Series",
-    caption = "Source: World Bank 'Pink Sheet' available at\nhttps://www.worldbank.org/en/research/commodity-markets"
+    caption = paste0(
+      "Source: World Bank 'Pink Sheet' updated on ",
+      format(file_update, "%d %B %Y"),
+      "\navailable at https://www.worldbank.org/en/research/commodity-markets"
+    )
   ) +
   scale_y_continuous(
     limits = c(0, NA),
@@ -105,6 +111,8 @@ plot_dt <- tryCatch(
   }
 )
 
+file_update <- unique(plot_dt$Update)
+
 required_columns <- c("Date", "Series", "Value")
 missing_columns <- setdiff(required_columns, names(plot_dt))
 if (length(missing_columns)) {
@@ -139,7 +147,11 @@ plot_object <- ggplot(plot_dt[Date>="2000-01-01"], aes(x = Date, y = Value, colo
     y = NULL,
     subtitle = "$/mt",
     color = "Series",
-    caption = "Source: World Bank 'Pink Sheet' available at\nhttps://www.worldbank.org/en/research/commodity-markets"
+    caption = paste0(
+      "Source: World Bank 'Pink Sheet' updated on ",
+      format(file_update, "%d %B %Y"),
+      "\navailable at https://www.worldbank.org/en/research/commodity-markets"
+    )
   ) +
   scale_y_continuous(
     limits = c(0, NA),
