@@ -17,6 +17,12 @@ prices_energy <- c("Crude_oil_Brent", "Natural_gas_Europe", "Coal_Australian")
 prices_fertilizers <- c("Urea", "DAP", "Potassium_chloride")
 prices_grains <- c("Wheat_US_SRW", "Maize", "Rice_Thai_5")
 label_gap_frac <- 0.05
+annotation_top_frac <- 0.12
+annotation_left_frac <- 0.02
+uniform_x_expand <- c(-0.15, 0.15)
+plot_width <- 16
+plot_height <- 9
+plot_dpi <- 300
 
 series_labels <- c(
   Energy = "Energy",
@@ -184,9 +190,10 @@ base_plot_theme <- theme(
 create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_text) {
   x_left <- min(plot_dt$Date, na.rm = TRUE)
   y_top <- max(plot_dt$Value, na.rm = TRUE)
+  y_upper <- y_top * (1 + annotation_top_frac)
   x_range <- as.numeric(diff(range(plot_dt$Date, na.rm = TRUE)))
-  y_annotation <- y_top * 1.12
-  x_annotation <- x_left - round(.02 * x_range)
+  y_annotation <- y_upper
+  x_annotation <- x_left - round(annotation_left_frac * x_range)
 
   ggplot(
     plot_dt,
@@ -217,15 +224,27 @@ create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_
       caption = caption_text
     ) +
     scale_y_continuous(
-      limits = c(0, NA),
+      limits = c(0, y_upper),
       expand = c(0, 0)
     ) +
     scale_x_date(
-      expand = expansion(mult = c(0, 0.15))
+      expand = expansion(mult = uniform_x_expand)
     ) +
     coord_cartesian(clip = "off") +
     theme_classic(base_size = 28) +
     base_plot_theme
+}
+
+save_plot <- function(plot_obj, filename) {
+  ggsave(
+    filename = filename,
+    plot = plot_obj,
+    width = plot_width,
+    height = plot_height,
+    dpi = plot_dpi,
+    bg = "white"
+  )
+  message(sprintf("Saved plot to %s", filename))
 }
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
@@ -253,16 +272,7 @@ indices_plot <- create_single_axis_plot(
   annotation_text = "Index"
 )
 
-ggsave(
-  filename = output_indices,
-  plot = indices_plot,
-  width = 16,
-  height = 9,
-  dpi = 300,
-  bg = "white"
-)
-
-message(sprintf("Saved plot to %s", output_indices))
+save_plot(indices_plot, output_indices)
 
 # Fertilizer prices
 
@@ -283,16 +293,7 @@ fertilizers_plot <- create_single_axis_plot(
   annotation_text = "($/mt)"
 )
 
-ggsave(
-  filename = output_fertilizers,
-  plot = fertilizers_plot,
-  width = 16,
-  height = 9,
-  dpi = 300,
-  bg = "white"
-)
-
-message(sprintf("Saved plot to %s", output_fertilizers))
+save_plot(fertilizers_plot, output_fertilizers)
 
 # Grain prices
 
@@ -313,16 +314,7 @@ grains_plot <- create_single_axis_plot(
   annotation_text = "($/mt)"
 )
 
-ggsave(
-  filename = output_grains,
-  plot = grains_plot,
-  width = 16,
-  height = 9,
-  dpi = 300,
-  bg = "white"
-)
-
-message(sprintf("Saved plot to %s", output_grains))
+save_plot(grains_plot, output_grains)
 
 # Energy prices
 
@@ -355,7 +347,8 @@ gas_axis_dt <- data.table(
 x_left <- min(energy_dt$Date, na.rm = TRUE)
 y_top <- energy_dt[, max(Value_plot, na.rm = TRUE)]
 x_range <- as.numeric(diff(range(energy_dt$Date, na.rm = TRUE)))
-y_annotation <- y_top * 1.12
+y_upper <- y_top * (1 + annotation_top_frac)
+y_annotation <- y_upper
 
 x_main_lab <- x_left - round(0.2 * x_range)   # $/bbl and $/mt
 x_gas_tick1 <- x_left - round(0.012 * x_range)  # gas tick start
@@ -424,11 +417,11 @@ energy_plot <- ggplot(
     caption = plot_caption
   ) +
   scale_y_continuous(
-    limits = c(0, NA),
+    limits = c(0, y_upper),
     expand = c(0, 0)
   ) +
   scale_x_date(
-    expand = expansion(mult = c(-.15, 0.15))
+    expand = expansion(mult = uniform_x_expand)
   ) +
   coord_cartesian(clip = "off") +
   theme_classic(base_size = 28) +
@@ -436,13 +429,4 @@ energy_plot <- ggplot(
 
 energy_plot
 
-ggsave(
-  filename = output_energy,
-  plot = energy_plot,
-  width = 16,
-  height = 9,
-  dpi = 300,
-  bg = "white"
-)
-
-message(sprintf("Saved plot to %s", output_energy))
+save_plot(energy_plot, output_energy)
