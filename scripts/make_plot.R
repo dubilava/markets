@@ -3,6 +3,7 @@
 suppressPackageStartupMessages({
   library(data.table)
   library(ggplot2)
+  library(viridis)
 })
 
 input_file <- "data/processed/pink_sheet_combined.csv"
@@ -16,13 +17,17 @@ required_indices <- c("Energy", "Grains", "Fertilizers")
 prices_energy <- c("Crude_oil_Brent", "Natural_gas_Europe", "Coal_Australian")
 prices_fertilizers <- c("Urea", "DAP", "Potassium_chloride")
 prices_grains <- c("Wheat_US_SRW", "Maize", "Rice_Thai_5")
-label_gap_frac <- 0.05
+label_gap_frac <- 0.07
 annotation_top_frac <- 0.12
-annotation_left_frac <- 0.02
-uniform_x_expand <- c(0, 0.15)
+annotation_left_frac <- 0.04
+single_y_expand <- c(-annotation_left_frac+.02, 0.15)
+double_y_expand <- c(-0.15, 0.15)
 plot_width <- 16
 plot_height <- 9
 plot_dpi <- 300
+
+pal <- viridis(9, option = "H", begin = .1, end = .9)
+pal
 
 series_labels <- c(
   Energy = "Energy",
@@ -183,11 +188,11 @@ base_plot_theme <- theme(
   plot.title.position = "plot",
   legend.position = "none",
   panel.grid.major.y = element_line(linewidth = 0.6, linetype = 3, color = "gray"),
-  plot.caption = element_text(hjust = 0, color = "dimgray"),
+  plot.caption = element_text(hjust = 0, color = "dimgray", family = "mono"),
   plot.margin = margin(30, 90, 20, 90)
 )
 
-compute_y_scale <- function(values, n_breaks = 4, top_padding_frac = annotation_top_frac) {
+compute_y_scale <- function(values, n_breaks = 5, top_padding_frac = annotation_top_frac) {
   y_top <- max(values, na.rm = TRUE)
   breaks <- pretty(c(0, y_top), n = n_breaks)
   breaks <- breaks[breaks >= 0]
@@ -225,7 +230,7 @@ create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_
       size = 8,
       show.legend = FALSE
     ) +
-    scale_color_viridis_d(option = "H", begin = 0.1, end = 0.7) +
+    scale_color_manual(values = pal[c(2, 7, 9)]) +
     annotate(
       "text",
       x = x_annotation,
@@ -248,13 +253,13 @@ create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_
       expand = c(0, 0)
     ) +
     scale_x_date(
-      expand = expansion(mult = uniform_x_expand)
+      expand = expansion(mult = single_y_expand)
     ) +
     coord_cartesian(clip = "off") +
     theme_classic(base_size = 28) +
     base_plot_theme +
     theme(
-      axis.text.y = element_text(family = "mono")
+      axis.text = element_text(family = "mono")
     )
 }
 
@@ -359,7 +364,7 @@ energy_labels <- adjust_end_labels(
 
 gas_breaks <- pretty(
   c(0, energy_dt[Series == "Natural_gas_Europe", max(Value, na.rm = TRUE)]),
-  n = 4
+  n = 5
 )
 
 gas_axis_dt <- data.table(
@@ -410,9 +415,10 @@ energy_plot <- ggplot(
     aes(x = x_lab, y = y, label = lab),
     inherit.aes = FALSE,
     hjust = 0,
-    vjust = 0.5,
+    vjust = .5,
     size = 8,
-    color = "black"
+    color = "black",
+    family = "mono"
   ) +
   annotate(
     "text",
@@ -432,7 +438,7 @@ energy_plot <- ggplot(
     vjust = 1,
     size = 6
   ) +
-  scale_color_viridis_d(option = "H", begin = 0.1, end = 0.7) +
+  scale_color_manual(values = pal[c(2, 7, 9)]) +
   labs(
     x = NULL,
     y = NULL,
@@ -446,13 +452,13 @@ energy_plot <- ggplot(
     expand = c(0, 0)
   ) +
   scale_x_date(
-    expand = expansion(mult = c(-0.15,.15))
+    expand = expansion(mult = double_y_expand)
   ) +
   coord_cartesian(clip = "off") +
   theme_classic(base_size = 28) +
   base_plot_theme +
   theme(
-    axis.text.y = element_text(family = "mono")
+    axis.text = element_text(family = "mono")
   )
 
 
