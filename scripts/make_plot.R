@@ -19,7 +19,7 @@ prices_grains <- c("Wheat_US_SRW", "Maize", "Rice_Thai_5")
 label_gap_frac <- 0.05
 annotation_top_frac <- 0.12
 annotation_left_frac <- 0.02
-uniform_x_expand <- c(-0.15, 0.15)
+uniform_x_expand <- c(0, 0.15)
 plot_width <- 16
 plot_height <- 9
 plot_dpi <- 300
@@ -212,7 +212,7 @@ create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_
   x_range <- as.numeric(diff(range(plot_dt$Date, na.rm = TRUE)))
   y_annotation <- y_upper
   x_annotation <- x_left - round(annotation_left_frac * x_range)
-
+  
   ggplot(
     plot_dt,
     aes(x = Date, y = Value, color = Series)
@@ -242,7 +242,7 @@ create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_
       caption = caption_text
     ) +
     scale_y_continuous(
-      labels = function(x) stringr::str_pad(x, width = 4, side = "left"),
+      labels = function(x) sprintf("%4.0f", x),
       breaks = y_scale$breaks,
       limits = c(0, y_upper),
       expand = c(0, 0)
@@ -252,7 +252,10 @@ create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_
     ) +
     coord_cartesian(clip = "off") +
     theme_classic(base_size = 28) +
-    base_plot_theme
+    base_plot_theme +
+    theme(
+      axis.text.y = element_text(family = "mono")
+    )
 }
 
 save_plot <- function(plot_obj, filename) {
@@ -437,17 +440,22 @@ energy_plot <- ggplot(
     caption = plot_caption
   ) +
   scale_y_continuous(
-    labels = function(x) stringr::str_pad(x, width = 4, side = "left"),
+    labels = function(x) sprintf("%4.0f", x),
     breaks = y_scale$breaks,
     limits = c(0, y_upper),
     expand = c(0, 0)
   ) +
   scale_x_date(
-    expand = expansion(mult = uniform_x_expand)
+    expand = expansion(mult = c(-0.15,.15))
   ) +
   coord_cartesian(clip = "off") +
   theme_classic(base_size = 28) +
-  base_plot_theme
+  base_plot_theme +
+  theme(
+    axis.text.y = element_text(family = "mono")
+  )
+
+
 
 energy_plot
 
