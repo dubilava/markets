@@ -224,6 +224,7 @@ create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_
       caption = caption_text
     ) +
     scale_y_continuous(
+      labels = function(x) stringr::str_pad(x, width = 4, side = "left"),
       limits = c(0, y_upper),
       expand = c(0, 0)
     ) +
@@ -417,6 +418,7 @@ energy_plot <- ggplot(
     caption = plot_caption
   ) +
   scale_y_continuous(
+    labels = function(x) stringr::str_pad(x, width = 4, side = "left"),
     limits = c(0, y_upper),
     expand = c(0, 0)
   ) +
