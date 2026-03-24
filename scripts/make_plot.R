@@ -187,10 +187,28 @@ base_plot_theme <- theme(
   plot.margin = margin(30, 90, 20, 90)
 )
 
+compute_y_scale <- function(values, n_breaks = 4, top_padding_frac = annotation_top_frac) {
+  y_top <- max(values, na.rm = TRUE)
+  breaks <- pretty(c(0, y_top), n = n_breaks)
+  breaks <- breaks[breaks >= 0]
+
+  if (!length(breaks)) {
+    breaks <- c(0, y_top)
+  }
+
+  top_tick <- max(breaks, na.rm = TRUE)
+  y_upper <- max(y_top, top_tick) * (1 + top_padding_frac)
+
+  list(
+    breaks = breaks,
+    y_upper = y_upper
+  )
+}
+
 create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_text) {
   x_left <- min(plot_dt$Date, na.rm = TRUE)
-  y_top <- max(plot_dt$Value, na.rm = TRUE)
-  y_upper <- y_top * (1 + annotation_top_frac)
+  y_scale <- compute_y_scale(plot_dt$Value)
+  y_upper <- y_scale$y_upper
   x_range <- as.numeric(diff(range(plot_dt$Date, na.rm = TRUE)))
   y_annotation <- y_upper
   x_annotation <- x_left - round(annotation_left_frac * x_range)
@@ -225,6 +243,7 @@ create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_
     ) +
     scale_y_continuous(
       labels = function(x) stringr::str_pad(x, width = 4, side = "left"),
+      breaks = y_scale$breaks,
       limits = c(0, y_upper),
       expand = c(0, 0)
     ) +
@@ -346,9 +365,9 @@ gas_axis_dt <- data.table(
 )
 
 x_left <- min(energy_dt$Date, na.rm = TRUE)
-y_top <- energy_dt[, max(Value_plot, na.rm = TRUE)]
+y_scale <- compute_y_scale(energy_dt$Value_plot)
 x_range <- as.numeric(diff(range(energy_dt$Date, na.rm = TRUE)))
-y_upper <- y_top * (1 + annotation_top_frac)
+y_upper <- y_scale$y_upper
 y_annotation <- y_upper
 
 x_main_lab <- x_left - round(0.2 * x_range)   # $/bbl and $/mt
@@ -419,6 +438,7 @@ energy_plot <- ggplot(
   ) +
   scale_y_continuous(
     labels = function(x) stringr::str_pad(x, width = 4, side = "left"),
+    breaks = y_scale$breaks,
     limits = c(0, y_upper),
     expand = c(0, 0)
   ) +
