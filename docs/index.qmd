@@ -8,4 +8,8 @@ This site tracks selected commodity prices and price indices from the World Bank
 
 ![](assets/plots/pink_sheet_indices.png){fig-alt="Time-series plot of the Energy, Grains, Oils and Meals, and Fertilizers indices."}
 
-![](assets/plots/pink_sheet_prices.png){fig-alt="Time-series plot of the Urea, Rice, Maize, and Wheat prices."}
+![](assets/plots/pink_sheet_energy.png){fig-alt="Time-series plot of the Energy, Grains, Oils and Meals, and Fertilizers indices."}
+
+![](assets/plots/pink_sheet_fertilizers.png){fig-alt="Time-series plot of the Energy, Grains, Oils and Meals, and Fertilizers indices."}
+
+![](assets/plots/pink_sheet_grains.png){fig-alt="Time-series plot of the Urea, Rice, Maize, and Wheat prices."}

@@ -8,10 +8,30 @@ suppressPackageStartupMessages({
 input_file <- "data/processed/pink_sheet_combined.csv"
 output_dir <- "docs/assets/plots"
 output_indices <- file.path(output_dir, "pink_sheet_indices.png")
-output_prices <- file.path(output_dir, "pink_sheet_prices.png")
+output_energy <- file.path(output_dir, "pink_sheet_energy.png")
+output_fertilizers <- file.path(output_dir, "pink_sheet_fertilizers.png")
+output_grains <- file.path(output_dir, "pink_sheet_grains.png")
 
-required_indices <- c("Energy", "Grains", "Oils_Meals", "Fertilizers")
-required_prices <- c("Urea", "Rice_Thai_5", "Maize", "Wheat_US_SRW")
+required_indices <- c("Energy", "Grains", "Fertilizers")
+prices_energy <- c("Crude_oil_Brent", "Natural_gas_Europe", "Coal_Australian")
+prices_fertilizers <- c("Urea", "DAP", "Potassium_chloride")
+prices_grains <- c("Wheat_US_SRW", "Maize", "Rice_Thai_5")
+label_gap_frac <- 0.05
+
+series_labels <- c(
+  Energy = "Energy",
+  Grains = "Grains",
+  Fertilizers = "Fertilizers",
+  Crude_oil_Brent = "Crude Oil (Brent)",
+  Natural_gas_Europe = "Natural Gas (Europe)",
+  Coal_Australian = "Coal (Australia)",
+  Urea = "Urea",
+  DAP = "DAP",
+  Potassium_chloride = "Potash",
+  Wheat_US_SRW = "Wheat (US SRW)",
+  Maize = "Maize (US No2)",
+  Rice_Thai_5 = "Rice (Thai 5%)"
+)
 
 fail_gracefully <- function(message_text, status = 0L) {
   message(sprintf("Plot generation skipped: %s", message_text))
@@ -22,78 +42,220 @@ if (!file.exists(input_file)) {
   fail_gracefully(sprintf("processed dataset not found at %s", input_file))
 }
 
+adjust_end_labels <- function(
+    dt,
+    x_col = "Date",
+    y_col = "Value",
+    group_col = "Series",
+    x_nudge_days = 180,
+    min_gap_frac = 0.04,
+    lower_pad_frac = 0.02,
+    upper_pad_frac = 0.02
+) {
+  dt <- data.table::as.data.table(data.table::copy(dt))
 
-# Indices
+  label_dt <- dt[, .SD[which.max(get(x_col))], by = group_col]
+  data.table::setorderv(label_dt, y_col, order = -1L)
 
-plot_dt <- tryCatch(
-  fread(input_file),
-  error = function(e) {
-    fail_gracefully(sprintf("unable to read %s (%s)", input_file, conditionMessage(e)))
+  y_rng <- range(dt[[y_col]], na.rm = TRUE)
+  y_span <- diff(y_rng)
+  if (!is.finite(y_span) || y_span == 0) {
+    y_span <- max(abs(y_rng[1]), 1)
   }
+
+  min_gap <- y_span * min_gap_frac
+  lower_bound <- y_rng[1] + lower_pad_frac * y_span
+  upper_bound <- y_rng[2] - upper_pad_frac * y_span
+
+  label_dt[, x_lab := max(dt[[x_col]], na.rm = TRUE) + x_nudge_days]
+  label_dt[, y_lab := get(y_col)]
+
+  if (nrow(label_dt) >= 2) {
+    for (i in 2:nrow(label_dt)) {
+      if ((label_dt$y_lab[i - 1] - label_dt$y_lab[i]) < min_gap) {
+        label_dt$y_lab[i] <- label_dt$y_lab[i - 1] - min_gap
+      }
+    }
+  }
+
+  if (min(label_dt$y_lab, na.rm = TRUE) < lower_bound) {
+    shift_up <- lower_bound - min(label_dt$y_lab, na.rm = TRUE)
+    label_dt[, y_lab := y_lab + shift_up]
+  }
+
+  if (max(label_dt$y_lab, na.rm = TRUE) > upper_bound) {
+    shift_down <- max(label_dt$y_lab, na.rm = TRUE) - upper_bound
+    label_dt[, y_lab := y_lab - shift_down]
+  }
+
+  label_dt[, y_lab := pmin(pmax(y_lab, lower_bound), upper_bound)]
+  label_dt[]
+}
+
+apply_series_labels <- function(dt) {
+  dt <- data.table::copy(dt)
+  series_keys <- as.character(dt$Series)
+  dt[, Series_Label := fifelse(
+    series_keys %in% names(series_labels),
+    unname(series_labels[series_keys]),
+    series_keys
+  )]
+  dt[]
+}
+
+load_plot_data <- function(input_path) {
+  plot_dt <- tryCatch(
+    fread(input_path),
+    error = function(e) {
+      fail_gracefully(sprintf("unable to read %s (%s)", input_path, conditionMessage(e)))
+    }
+  )
+
+  required_columns <- c("Date", "Series", "Value")
+  missing_columns <- setdiff(required_columns, names(plot_dt))
+  if (length(missing_columns)) {
+    fail_gracefully(sprintf(
+      "processed dataset is missing required columns: %s",
+      paste(missing_columns, collapse = ", ")
+    ))
+  }
+
+  plot_dt[, Date := as.Date(Date)]
+  plot_dt[, Value := suppressWarnings(as.numeric(Value))]
+  plot_dt <- plot_dt[!is.na(Date) & !is.na(Value)]
+
+  if (!nrow(plot_dt)) {
+    fail_gracefully("all candidate rows were missing Date or Value after parsing")
+  }
+
+  file_update <- if ("Update" %in% names(plot_dt)) unique(plot_dt$Update) else character()
+  if (length(file_update) > 1L) {
+    file_update <- sort(file_update)
+    warning(sprintf(
+      "Multiple Update values found; using the latest one: %s",
+      tail(file_update, 1L)
+    ))
+  }
+
+  list(
+    data = plot_dt[Date >= as.Date("2000-01-01")],
+    file_update = tail(file_update, 1L)
+  )
+}
+
+prepare_series_data <- function(plot_dt, series_levels) {
+  filtered_dt <- data.table::copy(plot_dt[Series %in% series_levels])
+  if (!nrow(filtered_dt)) {
+    fail_gracefully("no rows found for the requested series")
+  }
+
+  filtered_dt[, Series := factor(Series, levels = series_levels)]
+  filtered_dt <- apply_series_labels(filtered_dt)
+  filtered_dt[]
+}
+
+build_caption <- function(file_update) {
+  if (!length(file_update) || is.na(file_update) || !nzchar(file_update)) {
+    update_text <- "an unknown date"
+  } else {
+    update_date <- as.Date(file_update)
+    if (is.na(update_date)) {
+      update_text <- file_update
+    } else {
+      update_text <- format(update_date, "%d %B %Y")
+    }
+  }
+
+  paste0(
+    "Source: World Bank 'Pink Sheet' updated on ",
+    update_text,
+    "\navailable at https://www.worldbank.org/en/research/commodity-markets"
+  )
+}
+
+base_plot_theme <- theme(
+  plot.title.position = "plot",
+  legend.position = "none",
+  panel.grid.major.y = element_line(linewidth = 0.6, linetype = 3, color = "gray"),
+  plot.caption = element_text(hjust = 0, color = "dimgray"),
+  plot.margin = margin(30, 90, 20, 90)
 )
 
-file_update <- unique(plot_dt$Update)
+create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_text) {
+  x_left <- min(plot_dt$Date, na.rm = TRUE)
+  y_top <- max(plot_dt$Value, na.rm = TRUE)
+  x_range <- as.numeric(diff(range(plot_dt$Date, na.rm = TRUE)))
+  y_annotation <- y_top * 1.12
+  x_annotation <- x_left - round(.02 * x_range)
 
-required_columns <- c("Date", "Series", "Value")
-missing_columns <- setdiff(required_columns, names(plot_dt))
-if (length(missing_columns)) {
-  fail_gracefully(sprintf(
-    "processed dataset is missing required columns: %s",
-    paste(missing_columns, collapse = ", ")
-  ))
+  ggplot(
+    plot_dt,
+    aes(x = Date, y = Value, color = Series)
+  ) +
+    geom_line(linewidth = 1) +
+    geom_text(
+      data = label_dt,
+      aes(x = x_lab, y = y_lab, label = Series_Label),
+      hjust = 0,
+      size = 8,
+      show.legend = FALSE
+    ) +
+    scale_color_viridis_d(option = "H", begin = 0.1, end = 0.7) +
+    annotate(
+      "text",
+      x = x_annotation,
+      y = y_annotation,
+      label = annotation_text,
+      hjust = 1,
+      vjust = 1,
+      size = 6
+    ) +
+    labs(
+      x = NULL,
+      y = NULL,
+      subtitle = " ",
+      caption = caption_text
+    ) +
+    scale_y_continuous(
+      limits = c(0, NA),
+      expand = c(0, 0)
+    ) +
+    scale_x_date(
+      expand = expansion(mult = c(0, 0.15))
+    ) +
+    coord_cartesian(clip = "off") +
+    theme_classic(base_size = 28) +
+    base_plot_theme
 }
-
-plot_dt <- plot_dt[Series %in% required_indices]
-if (!nrow(plot_dt)) {
-  fail_gracefully("no rows found for the requested series")
-}
-
-plot_dt[, Date := as.Date(Date)]
-plot_dt[, Value := suppressWarnings(as.numeric(Value))]
-plot_dt <- plot_dt[!is.na(Date) & !is.na(Value)]
-
-if (!nrow(plot_dt)) {
-  fail_gracefully("all candidate rows were missing Date or Value after parsing")
-}
-
-plot_dt[, Series := factor(Series, levels = required_indices)]
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
-plot_object <- ggplot(plot_dt[Date>="2000-01-01"], aes(x = Date, y = Value, color = Series)) +
-  geom_line(linewidth = 1) +
-  scale_color_viridis_d(option = "H", begin = 0.1, end = 0.9) +
-  labs(
-    x = NULL,
-    y = NULL,
-    subtitle = "Index",
-    color = "Series",
-    caption = paste0(
-      "Source: World Bank 'Pink Sheet' updated on ",
-      format(file_update, "%d %B %Y"),
-      "\navailable at https://www.worldbank.org/en/research/commodity-markets"
-    )
-  ) +
-  scale_y_continuous(
-    limits = c(0, NA),
-    expand = c(0, 0)
-  ) +
-  theme_classic(base_size = 28) +
-  theme(
-    plot.title.position = "plot",
-    legend.position = "top",
-    legend.title = element_blank(),
-    legend.key.width = grid::unit(1.5, "lines"),
-    legend.box.spacing = unit(0, "pt"),
-    legend.margin = margin(t = 0),
-    panel.grid.major.y = element_line(linewidth = .6, linetype = 3, color = "gray"),
-    plot.caption = element_text(hjust = 0, color="dimgray")
-  ) +
-  guides(color = guide_legend(nrow = 1, byrow = TRUE))
+plot_inputs <- load_plot_data(input_file)
+all_plot_dt <- plot_inputs$data
+plot_caption <- build_caption(plot_inputs$file_update)
+
+# Indices
+
+indices_dt <- prepare_series_data(all_plot_dt, required_indices)
+indices_labels <- adjust_end_labels(
+  dt = indices_dt,
+  x_col = "Date",
+  y_col = "Value",
+  group_col = "Series",
+  x_nudge_days = 180,
+  min_gap_frac = label_gap_frac
+)
+
+indices_plot <- create_single_axis_plot(
+  plot_dt = indices_dt,
+  label_dt = indices_labels,
+  caption_text = plot_caption,
+  annotation_text = "Index"
+)
 
 ggsave(
   filename = output_indices,
-  plot = plot_object,
+  plot = indices_plot,
   width = 16,
   height = 9,
   dpi = 300,
@@ -102,81 +264,185 @@ ggsave(
 
 message(sprintf("Saved plot to %s", output_indices))
 
-# Prices
+# Fertilizer prices
 
-plot_dt <- tryCatch(
-  fread(input_file),
-  error = function(e) {
-    fail_gracefully(sprintf("unable to read %s (%s)", input_file, conditionMessage(e)))
-  }
+fertilizers_dt <- prepare_series_data(all_plot_dt, prices_fertilizers)
+fertilizers_labels <- adjust_end_labels(
+  dt = fertilizers_dt,
+  x_col = "Date",
+  y_col = "Value",
+  group_col = "Series",
+  x_nudge_days = 180,
+  min_gap_frac = label_gap_frac
 )
 
-file_update <- unique(plot_dt$Update)
-
-required_columns <- c("Date", "Series", "Value")
-missing_columns <- setdiff(required_columns, names(plot_dt))
-if (length(missing_columns)) {
-  fail_gracefully(sprintf(
-    "processed dataset is missing required columns: %s",
-    paste(missing_columns, collapse = ", ")
-  ))
-}
-
-plot_dt <- plot_dt[Series %in% required_prices]
-if (!nrow(plot_dt)) {
-  fail_gracefully("no rows found for the requested series")
-}
-
-plot_dt[, Date := as.Date(Date)]
-plot_dt[, Value := suppressWarnings(as.numeric(Value))]
-plot_dt <- plot_dt[!is.na(Date) & !is.na(Value)]
-
-if (!nrow(plot_dt)) {
-  fail_gracefully("all candidate rows were missing Date or Value after parsing")
-}
-
-plot_dt[, Series := factor(Series, levels = required_prices)]
-
-dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-
-plot_object <- ggplot(plot_dt[Date>="2000-01-01"], aes(x = Date, y = Value, color = Series)) +
-  geom_line(linewidth = 1) +
-  scale_color_viridis_d(option = "H", begin = 0.1, end = 0.9) +
-  labs(
-    x = NULL,
-    y = NULL,
-    subtitle = "$/mt",
-    color = "Series",
-    caption = paste0(
-      "Source: World Bank 'Pink Sheet' updated on ",
-      format(file_update, "%d %B %Y"),
-      "\navailable at https://www.worldbank.org/en/research/commodity-markets"
-    )
-  ) +
-  scale_y_continuous(
-    limits = c(0, NA),
-    expand = c(0, 0)
-  ) +
-  theme_classic(base_size = 28) +
-  theme(
-    plot.title.position = "plot",
-    legend.position = "top",
-    legend.title = element_blank(),
-    legend.key.width = grid::unit(1.5, "lines"),
-    legend.box.spacing = unit(0, "pt"),
-    legend.margin = margin(t = 0),
-    panel.grid.major.y = element_line(linewidth = .6, linetype = 3, color = "gray"),
-    plot.caption = element_text(hjust = 0, color="dimgray")
-  ) +
-  guides(color = guide_legend(nrow = 1, byrow = TRUE))
+fertilizers_plot <- create_single_axis_plot(
+  plot_dt = fertilizers_dt,
+  label_dt = fertilizers_labels,
+  caption_text = plot_caption,
+  annotation_text = "($/mt)"
+)
 
 ggsave(
-  filename = output_prices,
-  plot = plot_object,
+  filename = output_fertilizers,
+  plot = fertilizers_plot,
   width = 16,
   height = 9,
   dpi = 300,
   bg = "white"
 )
 
-message(sprintf("Saved plot to %s", output_prices))
+message(sprintf("Saved plot to %s", output_fertilizers))
+
+# Grain prices
+
+grains_dt <- prepare_series_data(all_plot_dt, prices_grains)
+grains_labels <- adjust_end_labels(
+  dt = grains_dt,
+  x_col = "Date",
+  y_col = "Value",
+  group_col = "Series",
+  x_nudge_days = 180,
+  min_gap_frac = label_gap_frac
+)
+
+grains_plot <- create_single_axis_plot(
+  plot_dt = grains_dt,
+  label_dt = grains_labels,
+  caption_text = plot_caption,
+  annotation_text = "($/mt)"
+)
+
+ggsave(
+  filename = output_grains,
+  plot = grains_plot,
+  width = 16,
+  height = 9,
+  dpi = 300,
+  bg = "white"
+)
+
+message(sprintf("Saved plot to %s", output_grains))
+
+# Energy prices
+
+energy_dt <- prepare_series_data(all_plot_dt, prices_energy)
+energy_dt[, Value_plot := fifelse(
+  Series == "Natural_gas_Europe",
+  Value * 5,
+  Value
+)]
+
+energy_labels <- adjust_end_labels(
+  dt = energy_dt,
+  x_col = "Date",
+  y_col = "Value_plot",
+  group_col = "Series",
+  x_nudge_days = 180,
+  min_gap_frac = label_gap_frac
+)
+
+gas_breaks <- pretty(
+  c(0, energy_dt[Series == "Natural_gas_Europe", max(Value, na.rm = TRUE)]),
+  n = 4
+)
+
+gas_axis_dt <- data.table(
+  y = gas_breaks * 5,
+  lab = gas_breaks
+)
+
+x_left <- min(energy_dt$Date, na.rm = TRUE)
+y_top <- energy_dt[, max(Value_plot, na.rm = TRUE)]
+x_range <- as.numeric(diff(range(energy_dt$Date, na.rm = TRUE)))
+y_annotation <- y_top * 1.12
+
+x_main_lab <- x_left - round(0.2 * x_range)   # $/bbl and $/mt
+x_gas_tick1 <- x_left - round(0.012 * x_range)  # gas tick start
+x_gas_tick2 <- x_left - round(0.02 * x_range)  # gas tick end
+x_gas_lab   <- x_left - round(0.00 * x_range)  # gas tick labels and $/mmbtu
+
+gas_axis_dt[, `:=`(
+  x_tick_start = x_gas_tick1,
+  x_tick_end   = x_gas_tick2,
+  x_lab        = x_gas_lab
+)]
+
+gas_axis_dt <- gas_axis_dt[y!=0]
+
+energy_plot <- ggplot(
+  energy_dt,
+  aes(x = Date, y = Value_plot, color = Series)
+) +
+  geom_line(linewidth = 1) +
+  geom_text(
+    data = energy_labels,
+    aes(x = x_lab, y = y_lab, label = Series_Label),
+    hjust = 0,
+    size = 8,
+    show.legend = FALSE
+  ) +
+  geom_segment(
+    data = gas_axis_dt,
+    aes(x = x_tick_start, xend = x_tick_end, y = y, yend = y),
+    inherit.aes = FALSE,
+    linewidth = 1.2,
+    color = "black"
+  ) +
+  geom_text(
+    data = gas_axis_dt,
+    aes(x = x_lab, y = y, label = lab),
+    inherit.aes = FALSE,
+    hjust = 0,
+    vjust = 0.5,
+    size = 8,
+    color = "black"
+  ) +
+  annotate(
+    "text",
+    x = x_main_lab,
+    y = y_annotation,
+    label = "Crude Oil ($/bbl)\nCoal ($/mt)",
+    hjust = 0,
+    vjust = 1,
+    size = 6
+  ) +
+  annotate(
+    "text",
+    x = x_gas_lab,
+    y = y_annotation,
+    label = "Natural Gas ($/mmbtu)",
+    hjust = 0,
+    vjust = 1,
+    size = 6
+  ) +
+  scale_color_viridis_d(option = "H", begin = 0.1, end = 0.7) +
+  labs(
+    x = NULL,
+    y = NULL,
+    subtitle = " ",
+    caption = plot_caption
+  ) +
+  scale_y_continuous(
+    limits = c(0, NA),
+    expand = c(0, 0)
+  ) +
+  scale_x_date(
+    expand = expansion(mult = c(-.15, 0.15))
+  ) +
+  coord_cartesian(clip = "off") +
+  theme_classic(base_size = 28) +
+  base_plot_theme
+
+energy_plot
+
+ggsave(
+  filename = output_energy,
+  plot = energy_plot,
+  width = 16,
+  height = 9,
+  dpi = 300,
+  bg = "white"
+)
+
+message(sprintf("Saved plot to %s", output_energy))
