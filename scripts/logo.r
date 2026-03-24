@@ -1,11 +1,6 @@
 library(ggplot2)
 library(data.table)
-library(magick)
-library(cowplot)
-library(showtext)
 library(viridis)
-# font_add_google(name="Syne Mono")
-# showtext_auto()
 
 pal <- viridis(9, option = "H", begin = .1, end = .9)
 
@@ -52,18 +47,8 @@ gg <- ggplot()+
   annotate("text",x=0,y=-.03,label="THE\nGUESS\nPROJECT",size=42,color=pal[7],lineheight=.3,family="mono")+
   theme_void()
 
-ggsave("logo.png",gg,width=2^10,height=2^10,units="px")
+output_dir <- file.path("docs", "assets", "logo")
+if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 
-# logo <- image_read("logo.png")
-# 
-# gg_blank <- ggplot(data=data.table(x=c(0,1),y=c(0,1))) +
-#   geom_blank()+
-#   theme_void()+
-#   theme(panel.background=element_rect(fill="white",color=NA))
-# 
-# # add logo
-# gg_blank <- ggdraw(gg_blank) +
-#   draw_image(logo,scale=1,x=0,y=0,clip="off")
-# 
-# ggsave("logo_wide.png",gg_blank,width=1280,height=640,units="px")
-
+ggsave(file.path(output_dir, "logo.png"), gg, width = 2^10, height = 2^10, units = "px")
+message("Logo written to: ", file.path(output_dir, "logo.png"))
