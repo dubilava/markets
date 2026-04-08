@@ -2,8 +2,8 @@
   {
     "objectID": "docs/index.html",
     "href": "docs/index.html",
-    "title": "World Bank Pink Sheet Indices",
+    "title": "Commodity Price Tracker",
     "section": "",
-    "text": "This site tracks price indices for selected commodity groups from the World Bank’s Pink Sheet, updated monthly. The indices are expressed in nominal US dollars and normalized to 2010 = 100.\nLast updated: r {   files &lt;- list.files(\"data/raw\", pattern = \"CMO-Historical-Data-Monthly_\\\\d{4}-\\\\d{2}-\\\\d{2}\", full.names = FALSE)   dates &lt;- sub(\".*_(\\\\d{4}-\\\\d{2}-\\\\d{2})$\", \"\\\\1\", files)   format(max(as.Date(dates)), \"%B %d, %Y\") }"
+    "text": "This site tracks selected commodity prices and price indices from the World Bank’s ‘Pink Sheet,’ which is typically updated at the beginning of each month. Prices are expressed in nominal US dollars, and indices are normalized to 2010 = 100."
   }
 ]

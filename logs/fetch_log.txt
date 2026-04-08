@@ -12,3 +12,23 @@
 [2026-03-22 15:28:51 AEDT] [INFO] Fetch source page https://www.worldbank.org/en/research/commodity-markets (attempt 1 of 3)
 [2026-03-22 15:28:52 AEDT] [INFO] Resolved monthly prices URL: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
 [2026-03-22 15:28:52 AEDT] [INFO] Inspect remote workbook metadata https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx (attempt 1 of 3)
+[2026-04-08 20:49:39 AEST] [INFO] Fetch source page https://www.worldbank.org/en/research/commodity-markets (attempt 1 of 3)
+[2026-04-08 20:49:41 AEST] [WARN] Fetch source page https://www.worldbank.org/en/research/commodity-markets failed: Failed to perform HTTP request.
+Caused by error in `curl::curl_fetch_memory()`:
+! Could not connect to server [www.worldbank.org]:
+Failed to connect to www.worldbank.org port 443 after 93 ms: Could not connect to server
+[2026-04-08 20:49:43 AEST] [INFO] Fetch source page https://www.worldbank.org/en/research/commodity-markets (attempt 2 of 3)
+[2026-04-08 20:49:43 AEST] [WARN] Fetch source page https://www.worldbank.org/en/research/commodity-markets failed: Failed to perform HTTP request.
+Caused by error in `curl::curl_fetch_memory()`:
+! Could not connect to server [www.worldbank.org]:
+Failed to connect to www.worldbank.org port 443 after 1 ms: Could not connect to server
+[2026-04-08 20:49:48 AEST] [INFO] Fetch source page https://www.worldbank.org/en/research/commodity-markets (attempt 3 of 3)
+[2026-04-08 20:49:48 AEST] [WARN] Fetch source page https://www.worldbank.org/en/research/commodity-markets failed: Failed to perform HTTP request.
+Caused by error in `curl::curl_fetch_memory()`:
+! Could not connect to server [www.worldbank.org]:
+Failed to connect to www.worldbank.org port 443 after 1 ms: Could not connect to server
+[2026-04-08 20:50:07 AEST] [INFO] Fetch source page https://www.worldbank.org/en/research/commodity-markets (attempt 1 of 3)
+[2026-04-08 20:50:08 AEST] [INFO] Resolved monthly prices URL: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+[2026-04-08 20:50:08 AEST] [INFO] Inspect remote workbook metadata https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx (attempt 1 of 3)
+[2026-04-08 20:50:08 AEST] [INFO] Download workbook https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx (attempt 1 of 3)
+[2026-04-08 20:50:09 AEST] [INFO] Saved workbook to data/raw/CMO-Historical-Data-Monthly_2026-04-02.xlsx (781645 bytes)

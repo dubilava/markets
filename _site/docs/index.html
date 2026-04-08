@@ -2,13 +2,17 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.25">
+<meta name="generator" content="quarto-1.9.36">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="dcterms.date" content="2026-04-08">
 
-<title>World Bank Pink Sheet Indices – Pink Sheet Monitor</title>
+<title>Commodity Price Tracker – Pink Sheet Monitor</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -31,15 +35,14 @@ ul.task-list li input[type="checkbox"] {
 <meta name="quarto:offset" content="../">
 <script src="../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-e31584831b205ffbb2d98406f31c2a5b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-a0f9fd0d421825b736dc1bbcbcba2219.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -84,7 +87,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">World Bank Pink Sheet Indices</h1>
+<h1 class="title">Commodity Price Tracker</h1>
 </div>
 
 
@@ -92,6 +95,12 @@ ul.task-list li input[type="checkbox"] {
 <div class="quarto-title-meta">
 
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">April 8, 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -101,9 +110,11 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>This site tracks price indices for selected commodity groups from the World Bank’s Pink Sheet, updated monthly. The indices are expressed in nominal US dollars and normalized to 2010 = 100.</p>
-<p>Last updated: <code>r {   files &lt;- list.files("data/raw", pattern = "CMO-Historical-Data-Monthly_\\d{4}-\\d{2}-\\d{2}", full.names = FALSE)   dates &lt;- sub(".*_(\\d{4}-\\d{2}-\\d{2})$", "\\1", files)   format(max(as.Date(dates)), "%B %d, %Y") }</code></p>
+<p>This site tracks selected commodity prices and price indices from the World Bank’s ‘Pink Sheet,’ which is typically updated at the beginning of each month. Prices are expressed in nominal US dollars, and indices are normalized to 2010 = 100.</p>
 <p><img src="assets/plots/pink_sheet_indices.png" class="img-fluid" alt="Time-series plot of the Energy, Grains, Oils and Meals, and Fertilizers indices."></p>
+<p><img src="assets/plots/pink_sheet_energy.png" class="img-fluid" alt="Time-series plot of the Energy, Grains, Oils and Meals, and Fertilizers indices."></p>
+<p><img src="assets/plots/pink_sheet_fertilizers.png" class="img-fluid" alt="Time-series plot of the Energy, Grains, Oils and Meals, and Fertilizers indices."></p>
+<p><img src="assets/plots/pink_sheet_grains.png" class="img-fluid" alt="Time-series plot of the Urea, Rice, Maize, and Wheat prices."></p>
 
 
 

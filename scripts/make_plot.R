@@ -12,6 +12,7 @@ output_indices <- file.path(output_dir, "pink_sheet_indices.png")
 output_energy <- file.path(output_dir, "pink_sheet_energy.png")
 output_fertilizers <- file.path(output_dir, "pink_sheet_fertilizers.png")
 output_grains <- file.path(output_dir, "pink_sheet_grains.png")
+output_grainsurea <- file.path(output_dir, "pink_sheet_grainsurea.png")
 
 required_indices <- c("Energy", "Grains", "Fertilizers")
 prices_energy <- c("Crude_oil_Brent", "Natural_gas_Europe", "Coal_Australian")
@@ -192,27 +193,43 @@ base_plot_theme <- theme(
   plot.margin = margin(30, 90, 20, 90)
 )
 
-compute_y_scale <- function(values, n_breaks = 5, top_padding_frac = annotation_top_frac) {
-  y_top <- max(values, na.rm = TRUE)
-  breaks <- pretty(c(0, y_top), n = n_breaks)
-  breaks <- breaks[breaks >= 0]
+compute_y_scale <- function(
+    values,
+    n_breaks = 5,
+    top_padding_frac = annotation_top_frac,
+    lower_limit = 0
+) {
+  y_rng <- range(values, na.rm = TRUE)
+  y_bottom <- min(lower_limit, y_rng[1])
+  y_top <- y_rng[2]
+  breaks <- pretty(c(y_bottom, y_top), n = n_breaks)
+  breaks <- breaks[breaks >= y_bottom & breaks <= y_top]
 
   if (!length(breaks)) {
-    breaks <- c(0, y_top)
+    breaks <- unique(c(y_bottom, y_top))
   }
 
   top_tick <- max(breaks, na.rm = TRUE)
-  y_upper <- max(y_top, top_tick) * (1 + top_padding_frac)
+  y_span <- max(y_top - y_bottom, 1e-6)
+  y_upper <- max(y_top, top_tick) + y_span * top_padding_frac
 
   list(
     breaks = breaks,
+    y_lower = y_bottom,
     y_upper = y_upper
   )
 }
 
-create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_text) {
+create_single_axis_plot <- function(
+    plot_dt,
+    label_dt,
+    caption_text,
+    annotation_text,
+    y_lower = 0,
+    y_labels = function(x) sprintf("%4.0f", x)
+) {
   x_left <- min(plot_dt$Date, na.rm = TRUE)
-  y_scale <- compute_y_scale(plot_dt$Value)
+  y_scale <- compute_y_scale(plot_dt$Value, lower_limit = y_lower)
   y_upper <- y_scale$y_upper
   x_range <- as.numeric(diff(range(plot_dt$Date, na.rm = TRUE)))
   y_annotation <- y_upper
@@ -247,9 +264,9 @@ create_single_axis_plot <- function(plot_dt, label_dt, caption_text, annotation_
       caption = caption_text
     ) +
     scale_y_continuous(
-      labels = function(x) sprintf("%4.0f", x),
+      labels = y_labels,
       breaks = y_scale$breaks,
-      limits = c(0, y_upper),
+      limits = c(y_scale$y_lower, y_upper),
       expand = c(0, 0)
     ) +
     scale_x_date(
@@ -343,6 +360,33 @@ grains_plot <- create_single_axis_plot(
 )
 
 save_plot(grains_plot, output_grains)
+
+
+# grains to urea ratios
+
+grainsurea_dt <- merge(grains_dt,fertilizers_dt[Series=="Urea"][,.(Date,Urea=Value)],by="Date")
+
+grainsurea_dt[,Value:=Value/Urea]
+
+grainsurea_labels <- adjust_end_labels(
+  dt = grainsurea_dt,
+  x_col = "Date",
+  y_col = "Value",
+  group_col = "Series",
+  x_nudge_days = 180,
+  min_gap_frac = label_gap_frac
+)
+
+grainsurea_plot <- create_single_axis_plot(
+  plot_dt = grainsurea_dt,
+  label_dt = grainsurea_labels,
+  caption_text = plot_caption,
+  annotation_text = "Price Ratio",
+  y_labels = function(x) sprintf("%.2f", x)
+)
+
+save_plot(grainsurea_plot, output_grainsurea)
+
 
 # Energy prices
 
